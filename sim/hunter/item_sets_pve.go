@@ -441,16 +441,19 @@ var StrikersProwess = core.NewItemSet(core.ItemSet{
 var StrikersPursuit = core.NewItemSet(core.ItemSet{
 	Name: "Striker's Pursuit",
 	Bonuses: map[int32]core.ApplyEffect{
-		// Kill Shot's remaining cooldown is reduced by 65% when used on targets between 20% and 50% health, and has no cooldown while your Rapid Fire is active
+		// Kill Shot's cooldown is reduced by 6 seconds, and has no cooldown while your Rapid Fire is active
 		2: func(agent core.Agent) {
 			hunter := agent.(HunterAgent).GetHunter()
 			if !hunter.HasRune(proto.HunterRune_RuneLegsKillShot) {
 				return
 			}
 
-			cdReduction := 0.65
+			cdReduction := 6 * time.Second
 			core.MakePermanent(hunter.RegisterAura(core.Aura{
 				Label: "Striker's Pursuit 2P",
+				OnInit: func(aura *core.Aura, sim *core.Simulation) {
+					hunter.KillShot.CD.Duration -= cdReduction
+				},
 				OnCastComplete: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell) {
 					if spell.SpellCode != SpellCode_HunterKillShot {
 						return
@@ -458,14 +461,11 @@ var StrikersPursuit = core.NewItemSet(core.ItemSet{
 
 					if hunter.HasActiveAura("Rapid Fire") {
 						spell.CD.Reset()
-					} else if sim.CurrentTime > sim.Encounter.Duration/2 {
-						reducedCooldown := spell.CD.TimeToReady(sim) / 1000 * time.Duration(1000*(1.0-cdReduction))
-						spell.CD.Set(sim.CurrentTime + reducedCooldown)
 					}
 				},
 			}))
 		},
-		// Increases Kill Shot damage by 50%
+		// Increases Kill Shot damage by 55%
 		4: func(agent core.Agent) {
 			hunter := agent.(HunterAgent).GetHunter()
 			if !hunter.HasRune(proto.HunterRune_RuneLegsKillShot) {
@@ -475,7 +475,7 @@ var StrikersPursuit = core.NewItemSet(core.ItemSet{
 			hunter.RegisterAura(core.Aura{
 				Label: "Striker's Pursuit 4P",
 				OnInit: func(aura *core.Aura, sim *core.Simulation) {
-					hunter.KillShot.DamageMultiplier *= 1.50
+					hunter.KillShot.DamageMultiplier *= 1.55
 				},
 			})
 		},
